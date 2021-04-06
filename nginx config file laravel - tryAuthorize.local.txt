@@ -1,6 +1,6 @@
 server {
     listen 80;
-    //server_name tryAuthorize.local;
+    #server_name tryAuthorize.local;
     server_name 172.17.58.215;
     root /var/www/tryAuthorize.local/public;
 
