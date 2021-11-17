@@ -1,0 +1,13 @@
+# /etc/systemd/system/xvfb.service
+
+[Unit]
+Description=X virtual framebuffer
+
+[Service]
+Type=simple
+User=root
+
+ExecStart=/usr/bin/Xvfb :99 -ac
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+# /etc/systemd/system/selenium.service
+# assumes selenium server and chromedriver exist in the following paths:
+# ~/selenium/selenium-server-standalone-3.141.59.jar
+# ~/selenium/chromedriver
+
+[Unit]
+Description=Selenium Standalone Server
+Requires=xvfb.service
+After=xvfb.service
+
+[Service]
+Type=simple
+User=root
+
+Environment=DISPLAY=:99
+ExecStart=/usr/bin/java -jar ~/selenium/selenium-server-standalone-3.141.59.jar -Dwebdriver.chrome.driver=~/selenium/chromedriver > /var/log/selenium.log 2> /var/log/selenium.error.log &
+
+[Install]
+WantedBy=multi-user.target
