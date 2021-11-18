@@ -13,7 +13,7 @@ Type=simple
 User=root
 
 Environment=DISPLAY=:99
-ExecStart=/usr/bin/java -jar ~/selenium/selenium-server-standalone-3.141.59.jar -Dwebdriver.chrome.driver=~/selenium/chromedriver > /var/log/selenium.log 2> /var/log/selenium.error.log &
+ExecStart=/usr/bin/java -jar /home/sheratsuki/selenium/selenium-server-standalone-3.141.59.jar -Dwebdriver.chrome.driver=/home/sheratsuki/selenium/chromedriver > /var/log/selenium.log 2> /var/log/selenium.error.log &
 
 [Install]
 WantedBy=multi-user.target
