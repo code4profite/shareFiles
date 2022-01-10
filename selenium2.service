@@ -3,7 +3,7 @@ Description=Selenium Node
 After=selenium.service
 [Service]
 Type=simple
-User=user
+User=root
 
 Environment=DISPLAY=:1
 ExecStart=/usr/bin/xvfb-run /usr/bin/java -Dwebdriver.chrome.driver='/home/sheratsuki/selenium/chromedriver' -jar /home/sheratsuki/selenium/selenium-server-standalone-3.141.59.jar -role node  -hub http://localhost:4444/grid/register -browser 'browserName=chrome,maxInstances=20,platform=Linux'
