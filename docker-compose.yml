@@ -1,0 +1,22 @@
+version: '3'
+services:
+  www:
+    image: ubuntu
+    build:
+      context: www/.
+      args:
+        MYSQL_PASSWORD: 1234
+      dockerfile: LEMP_Wordpress_WooCommere_DockerFile
+    container_name: LEMP_Wordpress_WooCommere
+    command: bash
+    ports:
+     - "80:80" 
+     - "443:443" 
+     - "3306:3306" 
+     - "22:22"
+    volumes:
+     - .:/var/www/html/wordpress1
+    securityContext:
+      capabilities:
+        drop: ["all"]
+        add: ["NET_BIND"]

@@ -1,0 +1,201 @@
+FROM ubuntu
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt update
+
+#-------------------------------------------------------------------------------------------------------------------------------------
+#AUTHOR OF shell script https://github.com/ilikenwf/apt-fast
+#BLOGGER https://sleeplessbeastie.eu/2022/04/15/how-to-improve-apt-download-times/
+# add also /etc/apt/trusted.gpg.d/apt-fast.gpg
+RUN apt install debconf-utils
+
+RUN apt install -y lsb-release && apt install -y gnupg2	
+#
+RUN apt-key --keyring /etc/apt/trusted.gpg.d/apt-fast.gpg adv --no-default-keyring --keyserver keyserver.ubuntu.com --recv-keys A2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B
+
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/apt-fast.gpg ] http://ppa.launchpad.net/apt-fast/stable/ubuntu $(lsb_release --codename --short) main\n"\
+  "deb-src [signed-by=/etc/apt/trusted.gpg.d/apt-fast.gpg ] http://ppa.launchpad.net/apt-fast/stable/ubuntu $(lsb_release --codename --short) main"\
+  >> /etc/apt/sources.list.d/apt-fast.list
+
+RUN apt update
+RUN DEBIAN_FRONTEND=noninteractive apt install apt-fast -y
+#-------------------------------------------------------------------------------------------------------------------------------------
+RUN apt-fast install -y software-properties-common
+#-------------------------------------------------------------------------------------------------------------------------------------
+#RUN add-apt-repository ppa:apt-fast/stable -y
+#RUN DEBIAN_FRONTEND=noninteractive apt install -y apt-fast axel	
+#RUN sed -ire 's/^_MAXNUM=*$/_MAXNUM=15/' /etc/apt-fast.conf
+#RUN sed -ire 's/^_MAXCONPERSRV=*$/_MAXCONPERSRV=10/' /etc/apt-fast.conf
+#RUN sed -ire 's/^_SPLITCON=*$/_SPLITCON=10/' /etc/apt-fast.conf
+#RUN  /etc/apt-fast.conf
+
+#JUST TOO CHECK 5 lines before
+#RUN apt search apt-fast
+#RUN apt info apt-fast
+#RUN DEBIAN_FRONTEND=noninteractive apt install -y apt-fast
+#RUN debconf-get-selections | grep ^apt-fast
+#-------------------------------------------------------------------------------------------------------------------------------------
+
+#RUN echo 'APT::Install-Suggests "true";' | tee /etc/apt/apt.conf.d/Install_Suggests
+
+#-------------------------------------------------------------------------------------------------------------------------------------
+#AUTHOR https://jdhao.github.io/2020/06/11/linux_set_timezone/
+RUN apt-fast update && apt-fast upgrade -y && apt-fast install -y --no-install-recommends tzdata 
+RUN ln -fs /usr/share/zoneinfo/Africa/Casablanca /etc/localtime \
+&& dpkg-reconfigure --frontend noninteractive tzdata
+
+#-------------------------------------------------------------------------------------------------------------------------------------
+	
+RUN apt-add-repository ppa:ondrej/php
+RUN apt-fast update
+RUN apt-fast upgrade -y
+
+#RUN apt-fast install sudo
+RUN apt-fast install -y ssh
+RUN apt-fast install -y nginx  
+RUN apt-fast install -y ufw  
+RUN apt-fast install -y mysql-server
+
+RUN apt-fast install -y php
+RUN apt-fast install -y php-fpm
+RUN apt-fast install -y php-common
+RUN apt-fast install -y php-cli
+RUN apt-fast install -y php-mysql
+RUN apt-fast install -y php-curl
+#RUN apt-fast install -y php-ffi
+#RUN apt-fast install -y php-ftp
+#RUN apt-fast install -y php-fileinfo
+#RUN apt-fast install -y php-gd
+#RUN apt-fast install -y php-gettext
+RUN apt-fast install -y php-gmp
+RUN apt-fast install -y php-intl
+RUN apt-fast install -y php-imap
+RUN apt-fast install -y php-ldap
+RUN apt-fast install -y php-mbstring
+#RUN apt-fast install -y php-exif
+RUN apt-fast install -y php-pear
+RUN apt-fast install -y php-dev
+RUN apt-fast install -y php-xml
+#RUN pecl channel-update pecl.php.net
+#pecl says XML Extension not found
+#RUN pecl install oci8-2.2.0
+#RUN apt-fast install -y php-oci8_12c
+RUN apt-fast install -y php-odbc
+RUN apt-fast install -y php-pgsql
+#RUN apt-fast install -y php-shmop
+RUN apt-fast install -y php-snmp
+RUN apt-fast install -y php-soap
+#RUN apt-fast install -y php-sockets
+RUN apt-fast install -y php-sqlite3
+RUN apt-fast install -y php-tidy
+RUN apt-fast install -y php-xmlrpc
+# apt-fast install -y php-xsl
+RUN apt-fast install -y php-bcmath
+#RUN apt-fast install -y php-dba
+RUN apt-fast install -y php-enchant
+RUN apt-fast install -y php-interbase
+RUN apt-fast install -y php-json
+#RUN apt-fast install -y php-opcache
+RUN apt-fast install -y php-pgsql
+RUN apt-fast install -y php-phpdbg
+RUN apt-fast install -y php-pspell
+RUN apt-fast install -y php-readline
+RUN apt-fast install -y php-snmp
+RUN apt-fast install -y php-sybase
+#RUN apt-fast install -y php-xsl
+RUN apt-fast install -y php-zip
+#RUN apt-fast install-y php-bz2
+#RUN apt-fast install -y php-mysqli
+RUN apt-fast install vim -y
+RUN ufw allow http && ufw allow https && ufw allow ssh
+RUN service nginx start
+RUN service mysql restart
+
+RUN echo '\n\
+[wordpress_site] \n\
+user = www-data \n\
+group = www-data \n\
+listen = /var/run/php8.1-fpm-wordpress-site.sock \n\
+listen.owner = www-data \n\
+listen.group = www-data \n\
+php_admin_value[disable_functions] = exec,passthru,shell_exec,system \n\
+php_admin_flag[allow_url_fopen] = off \n\
+; Choose how the process manager will control the number of child processes. \n\
+pm = dynamic \n\
+pm.max_children = 75 \n\
+pm.start_servers = 10 \n\
+pm.min_spare_servers = 5 \n\
+pm.max_spare_servers = 20 \n\
+pm.process_idle_timeout = 10s' >> /etc/php/8.1/fpm/pool.d/wordpress_pool.conf
+
+RUN service php8.1-fpm start
+
+RUN echo '\n\
+ server { \n\
+  listen 80; \n\
+         server_name  localhost; \n\
+         root /var/www/html/; \n\
+         index index.html index.htm index.php; \n\
+\n\
+		 location = /favicon.ico {\n\
+                log_not_found off;\n\
+                access_log off;\n\
+        }\n\
+\n\
+        location = /robots.txt {\n\
+                allow all;\n\
+                log_not_found off;\n\
+                access_log off;\n\
+        }\n\
+\n\
+		location /wordpress { \n\
+			try_files $uri $uri/ /wordpress/index.php?$args; \n\
+		} \n\	
+\n\
+		location /phpmyadmin { \n\
+			try_files $uri $uri/ /phpmyadmin/index.php?$args; \n\
+		} \n\	
+
+\n\
+         location / { \n\
+            try_files $uri $uri/ /index.php?$args; \n\
+         } \n\
+\n\
+         location ~ \.php$ { \n\
+            fastcgi_split_path_info ^(.+\.php)(.*)$; \n\
+            fastcgi_pass unix:/var/run/php8.1-fpm-wordpress-site.sock; \n\
+            fastcgi_index index.php; \n\
+            include fastcgi.conf; \n\
+		} \n\
+\n\
+		location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ { \n\
+                expires max; \n\
+                log_not_found off; \n\
+        } \n\
+}' >> /etc/nginx/conf.d/wordpress1.locahost.conf
+
+RUN sed -ire 's/^bind-address.*=.*$/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
+
+#https://stackoverflow.com/questions/62987154/mysql-wont-start-error-su-warning-cannot-change-directory-to-nonexistent
+RUN service mysql stop
+RUN usermod -d /var/lib/mysql/ mysql
+RUN service mysql start
+
+#RUN nginx -t 
+#RUN nginx -s reload
+RUN chown www-data:www-data /var/www/*
+RUN service nginx restart
+#RUN sed -ire 's/^;extension_dir = ".\/"$/extension_dir = "\/usr\/lib\/php\/20190902"/' /etc/php/8.1/fpm/php.ini
+#RUN apt-fast install -y unzip 
+#RUN wget https://wordpress.org/latest.zip -P /var/www/html/ 
+#RUN unzip -d /var/www/html /var/www/html/latest.zip
+#RUN chown -R www-data:www-data /var/www/html/wordpress
+#RUN find /var/www/html/wordpress -type d -exec chmod 755 {} \;
+#RUN find /var/www/html/wordpress -type f -exec chmod 644 {} \;
+#RUN chmod -R 755 /var/www/html/wordpress/wp-content
+EXPOSE 22
+EXPOSE 80
+#EXPOSE 443
+EXPOSE 3306
+ENTRYPOINT service nginx start && service ssh start && service mysql start && service php8.1-fpm start && bash

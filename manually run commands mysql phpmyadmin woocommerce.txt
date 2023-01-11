@@ -1,0 +1,99 @@
+# node modules with vulnerabilyties
+PyJWT
+oauthlib
+
+---------------------------------------------------------------
+BEFORE ALL THAT CONFIGURE PHP
+---------------------------------------------------------------
+# FOR PHP 8.1 it's not necessary but good to remember in the future
+vi /etc/php/8.1/fpm/pool.d/www.conf
+check listen = /run/php/php8.1-fpm.sock
+
+vi /etc/nginx/sites-available/default
+add index.php to index
+uncomment location ~ \.php$ {fastcgi_pass unix:/run/php/php8.1-fpm.sock;}
+
+service nginx restart
+
+
+#run just once because their is also extension_dir for windows that can be uncomment id runs again
+sed -ire 's/^;extension_dir = ".\/"$/extension_dir = "\/usr\/lib\/php\/20210902"/' /etc/php/8.1/cli/php.ini
+
+sed -ire 's/^;extension_dir = ".\/"$/extension_dir = "\/usr\/lib\/php\/20210902"/' /etc/php/8.1/fpm/php.ini
+
+---------------------------------------------------------------
+CONFIGURE MYSQL
+---------------------------------------------------------------
+
+mysql -u root -p
+#ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '1234';
+# note that IDENTIFIED WITH mysql_native_password let phpMyAdmin not show error mysqli::real_connect(): (HY000/1698): Access denied for user 'root'@'localhost'
+# by default root use auth_socket | The server-side auth_socket authentication plugin authenticates clients that connect from the local host through the Unix socket file.
+    t(+
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password by '1234';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost';
+create database wordpress;
+CREATE USER 'wordpress1'@'localhost' IDENTIFIED WITH mysql_native_password by '1234';
+GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpress1'@'localhost';
+FLUSH PRIVILEGES;
+mysql_secure_installation
+Change the password for root:no
+service mysql restart
+
+service nginx restart
+
+#If the address is 0.0.0.0, the server accepts TCP/IP connections on all server host IPv4 interfaces.
+#Furthermore if the address is ::, the server accepts TCP/IP connections on all server host IPv4 and IPv6 interfaces.
+#Use this address to permit both IPv4 and IPv6 connections on all server interfaces.
+
+sed -ire 's/^bind-address.*=.*$/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
+
+---------------------------------------------------------------
+CONFIGURE WORDPRESS
+---------------------------------------------------------------
+
+apt-fast install -y unzip 
+wget https://wordpress.org/latest.zip -P /var/www/html/ 
+unzip -d /var/www/html /var/www/html/latest.zip
+
+find /var/www/html/wordpress -type d -exec chmod 755 {} \;
+find /var/www/html/wordpress -type f -exec chmod 644 {} \;
+
+---------------------------------------------------------------
+CONFIGURE woocommerce
+---------------------------------------------------------------
+
+sudo wget https://downloads.wordpress.org/plugin/woocommerce.7.1.0.zip -P /var/www/html/
+sudo unzip -d /var/www/html/wordpress/wp-content/plugins /var/www/html/woocommerce.7.1.0.zip
+
+---------------------------------------------------------------
+CONFIGURE phpmyadmin NOT ANYMORE
+---------------------------------------------------------------
+
+sudo wget https://files.phpmyadmin.net/phpMyAdmin/5.2.0/phpMyAdmin-5.2.0-all-languages.zip -P /var/www/html/
+sudo unzip -d /var/www/html /var/www/html/phpMyAdmin-5.2.0-all-languages.zip
+sudo mv /var/www/html/phpMyAdmin-5.2.0-all-languages /var/www/html/phpmyadmin
+
+#ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '1234';
+# note that IDENTIFIED WITH mysql_native_password let phpMyAdmin not show error mysqli::real_connect(): (HY000/1698): Access denied for user 'root'@'localhost'
+# by default root use auth_socket | The server-side auth_socket authentication plugin authenticates clients that connect from the local host through the Unix socket file.
+
+sudo chown -R www-data:www-data /var/www/html/phpmyadmin
+#let plugins use direcxt download not ftp upload
+sudo chown -R www-data:www-data /var/www/html/wordpress
+
+
+#https://support.plesk.com/hc/en-us/articles/213401789-Unable-to-log-in-to-Plesk-Unable-to-connect-to-database-mysql-connect-Permission-denied-var-lib-mysql-mysql-sock
+chown -R mysql:mysql /var/lib/mysql
+find /var/lib/mysql/* -type d -exec chmod 0700 {} \;
+find /var/lib/mysql/* -type f -exec chmod 0660 {} \;
+chmod 700 /var/lib/mysql
+
+#backup 
+tar -cpvzf /var/www/html/www.tar.gz /var/www/html
+#wordpress_database_1 is the name of database wordpress
+mysqldump -u root -p wordpress_database_1 | gzip > wordpress_database_1_backup.sql.gz
+#to restore 
+scp www.tar.gz wordpress_database_1_backup.sql.gz root@remote-server-ip:/var/html/www
+gunzip wordpress_database_1_backup.sql.gz
+mysqldump -u root -p wordpress_database_1 < wpbackup.sql

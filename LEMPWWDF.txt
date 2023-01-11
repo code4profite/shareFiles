@@ -1,0 +1,23 @@
+FROM ubuntu
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt update
+
+#-------------------------------------------------------------------------------------------------------------------------------------
+#AUTHOR https://sleeplessbeastie.eu/2022/04/15/how-to-improve-apt-download-times/
+# add also /etc/apt/trusted.gpg.d/apt-fast.gpg
+RUN apt install debconf-utils
+
+
+#RUN apt search apt-fast
+RUN apt install -y lsb-release && apt install -y gnupg2	
+#
+RUN apt-key --keyring /etc/apt/trusted.gpg.d/apt-fast.gpg adv --no-default-keyring --keyserver keyserver.ubuntu.com --recv-keys A2166B8DE8BDC3367D1901C11EE2FF37CA8DA16B
+
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/apt-fast.gpg ] http://ppa.launchpad.net/apt-fast/stable/ubuntu $(lsb_release --codename --short) main\n"\
+  "deb-src [signed-by=/etc/apt/trusted.gpg.d/apt-fast.gpg ] http://ppa.launchpad.net/apt-fast/stable/ubuntu $(lsb_release --codename --short) main"\
+  >> /etc/apt/sources.list.d/apt-fast.list
+
+RUN apt update
+RUN apt install apt-fast -y
